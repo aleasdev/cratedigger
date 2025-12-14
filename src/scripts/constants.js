@@ -1,10 +1,10 @@
-export default {
+const Constants = {
   debug: false,
   canvasWidth: null,
   canvasHeight: null,
   nbCrates: 2,
   recordsPerCrate: 24,
-  lightIntensity: 1,
+  lightIntensity: 500,
   cameraMouseMove: true,
   backgroundColor: 0x111111,
   sleeveColor: 0x0d0702,
@@ -51,13 +51,13 @@ export default {
     grabSensitivity: 6,
   },
 
-  onInfoPanelOpened: () => {},
+  onInfoPanelOpened: () => { },
 
-  onInfoPanelClosed: () => {},
+  onInfoPanelClosed: () => { },
 
-  onLoadingEnd: () => {},
+  onLoadingEnd: () => { },
 
-  extend: function(options) {
+  extend: function (options) {
     for (var key in options) {
       if (Object.prototype.hasOwnProperty.call(options, key)) {
         this[key] = options[key];
@@ -67,3 +67,5 @@ export default {
     return this;
   },
 };
+
+export default Constants;

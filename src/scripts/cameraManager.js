@@ -1,18 +1,26 @@
-import THREE from 'three.js';
-import TWEEN from 'tween.js';
+import * as THREE from 'three';
+import TWEEN from '@tweenjs/tween.js';
 
-import Constants from './constants';
+import Constants from './constants.js';
 
 let camera;
 let target;
 let cameraTween;
 let targetTween;
 
+function updateFOV() {
+  if (camera && camera.focalLength && camera.frameSize) {
+    camera.fov = 2 * Math.atan(camera.frameSize / (2 * camera.focalLength)) * (180 / Math.PI);
+    camera.updateProjectionMatrix();
+  }
+}
+
 function init(ratio) {
   camera = new THREE.PerspectiveCamera(45, ratio, 0.1, 20000);
   camera.focalLength = 45;
   camera.frameSize = 32;
-  camera.setLens(camera.focalLength, camera.frameSize);
+  // camera.setLens(camera.focalLength, camera.frameSize);
+  updateFOV();
 
   target = new THREE.Object3D();
   camera.lookAt(target.position);
@@ -115,6 +123,17 @@ function lookAtTarget() {
   camera.lookAt(target.position);
 }
 
+// Helper to expose manual update if needed by cratedigger.js (it was using camera.setLens logic indirectly)
+// In cratedigger.js: updateCamera() calls camera.setLens. We should update cratedigger.js to call simple updateFOV logic or expose it here.
+// But cratedigger.js accesses camera.focalLength directly and calls updateCamera().
+// It would be better if cameraManager exposed a method to update lens.
+
+function setLens(focalLength, frameSize) {
+  camera.focalLength = focalLength;
+  if (frameSize !== undefined) camera.frameSize = frameSize;
+  updateFOV();
+}
+
 export default {
   init,
   focusRecord,
@@ -123,12 +142,13 @@ export default {
   resetCamera,
   updateCameraAspect,
   lookAtTarget,
+  setLens, // Exposed for external control
 
-  getCamera: function() {
+  getCamera: function () {
     return camera;
   },
 
-  getTarget: function() {
+  getTarget: function () {
     return target;
   },
 }

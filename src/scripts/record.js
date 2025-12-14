@@ -1,8 +1,8 @@
-import THREE from 'three.js';
-import TWEEN from 'tween.js';
+import * as THREE from 'three';
+import TWEEN from '@tweenjs/tween.js';
 
-import Constants from './constants';
-import CameraManager from './cameraManager';
+import Constants from './constants.js';
+import CameraManager from './cameraManager.js';
 
 export default class Record {
   constructor(id, crateId, pos) {
@@ -13,11 +13,16 @@ export default class Record {
     this.recordXPos = -62 + (135 / Constants.recordsPerCrate) * pos;
     this.mesh = new THREE.Mesh(
       new THREE.BoxGeometry(100, 1.5, 100, 1, 1, 1),
-      new THREE.MeshFaceMaterial(new THREE.MeshLambertMaterial({
-        color: Constants.sleeveColor,
-      }))
+      [
+        new THREE.MeshLambertMaterial({ color: Constants.sleeveColor }),
+        new THREE.MeshLambertMaterial({ color: Constants.sleeveColor }),
+        new THREE.MeshLambertMaterial({ color: Constants.sleeveColor }),
+        new THREE.MeshLambertMaterial({ color: Constants.sleeveColor }),
+        new THREE.MeshLambertMaterial({ color: Constants.sleeveColor }),
+        new THREE.MeshLambertMaterial({ color: Constants.sleeveColor })
+      ]
     );
-    this.mesh.geometry.applyMatrix(new THREE.Matrix4().makeTranslation(50, 0, 0));
+    this.mesh.geometry.applyMatrix4(new THREE.Matrix4().makeTranslation(50, 0, 0));
     this.mesh.position.set(this.recordXPos, Constants.scene.recordBaseY, 0);
     this.mesh.rotation.z = Math.PI / 2;
     this.mesh.recordId = id;

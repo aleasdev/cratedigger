@@ -1,12 +1,16 @@
-import THREE from 'three.js';
-import TWEEN from 'tween.js';
-import Stats from 'stats-js';
-import dat from 'dat-gui';
-import Record from './record';
-import CameraManager from './cameraManager';
-import Constants from './constants';
+import * as THREE from 'three';
+import TWEEN from '@tweenjs/tween.js';
+import Stats from 'stats.js';
+import * as dat from 'dat.gui';
+import Record from './record.js';
+import CameraManager from './cameraManager.js';
+import Constants from './constants.js';
 
-// import Modernizr from 'Modernizr'
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
+import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader.js';
+import { DoFShader } from './shaders/DoFShader.js';
 
 // VARIABLES
 const exports = {}; // Object for public APIs
@@ -64,13 +68,7 @@ let targetCameraPos = {
 let woodMaterial;
 
 // Inject all external modules to THREE.js
-require('./threejs_modules/ShaderPass')(THREE);
-require('./threejs_modules/CopyShader')(THREE);
-require('./threejs_modules/RenderPass')(THREE);
-require('./threejs_modules/DoFShader')(THREE);
-require('./threejs_modules/FXAAShader')(THREE);
-require('./threejs_modules/MaskPass')(THREE);
-require('./threejs_modules/EffectComposer')(THREE);
+// Modules are now imported at the top
 
 // BASE METHODS
 function animate() {
@@ -120,7 +118,7 @@ function loadRecords(recordsData, shuffleBeforeLoading, done) {
   var i;
 
   resetShownRecord(true);
-  showLoading(function() {
+  showLoading(function () {
     if (loadedRecords > 0) {
       unloadRecords();
     }
@@ -132,7 +130,8 @@ function loadRecords(recordsData, shuffleBeforeLoading, done) {
     for (i = 0; i < records.length && i < recordsData.length; i++) {
       records[i].data = recordsData[i];
       records[i].setActive();
-      records[i].mesh.material.materials = getRecordMaterial(recordsData[i].cover, recordsData[i].hasSleeve);
+      // records[i].mesh.material.materials = getRecordMaterial(recordsData[i].cover, recordsData[i].hasSleeve);
+      records[i].mesh.material = getRecordMaterial(recordsData[i].cover, recordsData[i].hasSleeve);
     }
 
     // why ??
@@ -140,7 +139,7 @@ function loadRecords(recordsData, shuffleBeforeLoading, done) {
     loadedRecords = records.length;
     recordsDataList = recordsData;
 
-    setTimeout(function() {
+    setTimeout(function () {
       hideLoading(done);
       Constants.onLoadingEnd();
     }, 3000);
@@ -171,13 +170,13 @@ function selectRecord(id) {
 function flipSelectedRecord() {
   if (records[selectedRecord]) {
     infoPanelState = 'opening';
-    records[selectedRecord].flipRecord(function() {
+    records[selectedRecord].flipRecord(function () {
       infoPanelState = 'opened';
     });
 
     Constants.onInfoPanelOpened();
 
-    setTimeout(function() {
+    setTimeout(function () {
       fadeIn(Constants.elements.infoContainer);
     }, 300);
   }
@@ -188,7 +187,7 @@ function flipBackSelectedRecord(force) {
     fadeOut(Constants.elements.infoContainer);
     infoPanelState = 'closing';
 
-    records[selectedRecord].flipBackRecord(function() {
+    records[selectedRecord].flipBackRecord(function () {
       infoPanelState = 'closed';
       Constants.onInfoPanelClosed();
     }, force);
@@ -284,7 +283,7 @@ function scrollRecords(touch, baseY, delta) {
   oldDelta = !delta || Math.abs(delta) > 0.5 ? 0.5 : Math.abs(delta);
   scrollSpeed = touch ? Math.pow(1 - oldDelta, 3) * 200 : Math.pow(1 - oldDelta, 3) * 300;
 
-  scrollRecordsTimeout = setTimeout(function() {
+  scrollRecordsTimeout = setTimeout(function () {
     var newDelta = (baseY - mouse.y) / canvasHeight;
     renderer.domElement.classList.add('grab');
 
@@ -556,7 +555,10 @@ function initScene() {
   renderer = new THREE.WebGLRenderer({
     antialias: true,
   });
+  renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(canvasWidth, canvasHeight);
+  // Revert to Linear color space to match legacy "dark/rich" look
+  renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
 
   Constants.elements.canvasContainer.appendChild(renderer.domElement);
   renderer.domElement.id = 'context';
@@ -565,8 +567,10 @@ function initScene() {
   CameraManager.init(canvasWidth / canvasHeight);
   camera = CameraManager.getCamera();
 
-  woodTexture = THREE.ImageUtils.loadTexture(Constants.crateTexture);
-  woodTexture.anisotropy = renderer.getMaxAnisotropy();
+  // woodTexture = THREE.ImageUtils.loadTexture(Constants.crateTexture);
+  woodTexture = new THREE.TextureLoader().load(Constants.crateTexture);
+  woodTexture.colorSpace = THREE.NoColorSpace; // Treat as Linear
+  woodTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
   woodMaterial = new THREE.MeshLambertMaterial({
     map: woodTexture,
   });
@@ -579,21 +583,27 @@ function initScene() {
   initCrates();
   initRecords();
 
-  light = new THREE.PointLight(0xFFFFFF, Constants.lightIntensity * 1.1);
+  // Stronger lights to match original legacy brightness
+  light = new THREE.PointLight(0xFFFFFF, 2.5, 0, 0);
   light.position.set(300, 80, 0);
   scene.add(light);
 
-  leftLight = new THREE.PointLight(0xFFFFFF, Constants.lightIntensity * 0.6);
+  leftLight = new THREE.PointLight(0xFFFFFF, 2.0, 0, 0);
   leftLight.position.set(-100, 300, 1000);
   scene.add(leftLight);
 
-  rightLight = new THREE.PointLight(0xFFFFFF, Constants.lightIntensity * 0.6);
+  rightLight = new THREE.PointLight(0xFFFFFF, 2.0, 0, 0);
   rightLight.position.set(-100, 300, -1000);
   scene.add(rightLight);
+
+  // Stronger Ambient to bring out the wood color/texture
+  const ambientLight = new THREE.AmbientLight(0x404040, 1.5);
+  scene.add(ambientLight);
 
   initPostProcessing();
 
   bindEvents();
+
 
   // DOM setup
   Constants.elements.rootContainer.style.position = 'relative';
@@ -614,28 +624,54 @@ function initScene() {
 }
 
 function initPostProcessing() {
-  depthShader = THREE.ShaderLib.depthRGBA;
-  depthUniforms = THREE.UniformsUtils.clone(depthShader.uniforms);
+  //   depthShader = THREE.ShaderLib.depthRGBA;
+  //   depthUniforms = THREE.UniformsUtils.clone(depthShader.uniforms);
 
-  depthMaterial = new THREE.ShaderMaterial({
-    fragmentShader: depthShader.fragmentShader,
-    vertexShader: depthShader.vertexShader,
-    uniforms: depthUniforms,
-  });
-  depthMaterial.blending = THREE.NoBlending;
+  // Use simple DepthTexture instead of RGBADepth packing if possible in modern Three.js
+  // But to minimize changes, let's stick to what works or use DepthTexture.
+  // Modern DOFs often use DepthTexture directly.
+  // The ported DoFShader expects packed RGBA depth "unpackDepth".
+  // Let's try to map it.
+
+  // Actually, depthRGBA is removed in recent Three.js.
+  // We should use a DepthTexture.
 
   depthTarget = new THREE.WebGLRenderTarget(canvasWidth, canvasHeight, {
     minFilter: THREE.NearestFilter,
     magFilter: THREE.NearestFilter,
-    format: THREE.RGBAFormat,
+    // format: THREE.RGBAFormat
+  });
+  depthTarget.depthTexture = new THREE.DepthTexture();
+  depthTarget.depthTexture.type = THREE.UnsignedShortType;
+  // depthMaterial not needed if we use internal depth buffer rendering?
+  // The original code rendered scene with overrideMaterial to depthTarget.
+
+  // We can just use the depth texture from the main render maybe? 
+  // Or render the scene to a target with depth texture.
+
+  // To keep it simple, I'll use MeshDepthMaterial.
+  depthMaterial = new THREE.MeshDepthMaterial({
+    depthPacking: THREE.RGBADepthPacking
   });
 
-  composer = new THREE.EffectComposer(renderer);
-  composer.addPass(new THREE.RenderPass(scene, camera));
+  // depthMaterial initialization with ShaderLib.depthRGBA removed.
+  // Using MeshDepthMaterial defined above.
+
+  depthMaterial.blending = THREE.NoBlending;
+
+  //   depthTarget = new THREE.WebGLRenderTarget(canvasWidth, canvasHeight, {
+  //     minFilter: THREE.NearestFilter,
+  //     magFilter: THREE.NearestFilter,
+  //     format: THREE.RGBAFormat,
+  //   });
+  // Defined above for safety context
+
+  composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, camera));
 
   // Depth of field shader
 
-  dof = new THREE.ShaderPass(THREE.DoFShader);
+  dof = new ShaderPass(DoFShader);
   dof.uniforms.tDepth.value = depthTarget;
   dof.uniforms.size.value.set(canvasWidth, canvasHeight);
   dof.uniforms.textel.value.set(1.0 / canvasWidth, 1.0 / canvasHeight);
@@ -669,7 +705,7 @@ function initPostProcessing() {
   dof.uniforms.bias.value = 0; // Bokeh edge bias
   dof.uniforms.fringe.value = 0; // Bokeh chromatic aberration/fringing
 
-  FXAA = new THREE.ShaderPass(THREE.FXAAShader);
+  FXAA = new ShaderPass(FXAAShader);
 
   FXAA.uniforms.resolution.value.set(1 / canvasWidth, 1 / canvasHeight);
   FXAA.renderToScreen = true;
@@ -750,8 +786,7 @@ function initGUI() {
 }
 
 function updateCamera() {
-  camera.setLens(camera.focalLength, camera.frameSize);
-  camera.updateProjectionMatrix();
+  CameraManager.setLens(camera.focalLength, camera.frameSize);
   dof.uniforms.focalLength.value = camera.focalLength;
 }
 
@@ -840,14 +875,14 @@ function getRecordMaterial(src, hasSleeve) {
   mapCanvas.width = mapCanvas.height = 400;
   texture.minFilter = THREE.LinearFilter;
 
-  img.onload = function() {
+  img.onload = function () {
     var ctx;
 
     if (hasSleeve) {
       sleeve = new Image();
       sleeve.src = Constants.sleeveMaskTexture;
 
-      sleeve.onload = function() {
+      sleeve.onload = function () {
         ctx = mapCanvas.getContext('2d');
         ctx.translate(imgWidth / 2, imgHeight / 2);
         ctx.rotate(Math.PI / 2);
@@ -876,7 +911,7 @@ function getRecordMaterial(src, hasSleeve) {
     sleeveMaterial,
 
     // texture
-    new THREE.MeshLambertMaterial({
+    new THREE.MeshBasicMaterial({
       color: 0xffffff,
       map: texture,
     }),
@@ -949,7 +984,7 @@ function fadeIn(element) {
       element.addEventListener(transitionEvent, onFadeComplete);
     }
 
-    setTimeout(function() {
+    setTimeout(function () {
       element.style.opacity = 1;
     }, 15);
   }
