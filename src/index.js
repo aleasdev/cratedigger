@@ -1,3 +1,10 @@
+// Configuration
+const CONFIG = {
+  autoLoadDiscogs: true,
+  discogsUsername: 'aleasdev',
+  // Set to false to use default JSON data instead
+};
+
 import cratedigger from './scripts/cratedigger.js';
 import './styles/main.less';
 import './styles/cratedigger.less';
@@ -28,7 +35,7 @@ overlay.innerHTML = `
     <div id="discogs-form">
         <button id="discogs-close">X</button>
         <h2>Load from Discogs</h2>
-        <input type="text" id="discogs-username" placeholder="Enter Username (e.g. djshadow)" value="tusovski">
+        <input type="text" id="discogs-username" placeholder="Enter Username (e.g. djshadow)" value="">
         <br>
         <button class="discogs-btn" id="btn-collection">Load Collection</button>
         <button class="discogs-btn" id="btn-lists">Fetch Lists</button>
@@ -194,10 +201,23 @@ cratedigger.init({
   }
 });
 
-// Load default data
-cratedigger.loadRecords(data, true, () => {
-  bindEvents();
-});
+bindEvents();
+
+if (CONFIG.autoLoadDiscogs && CONFIG.discogsUsername) {
+  // Auto-load from Discogs
+  (async () => {
+    try {
+      const records = await discogsClient.fetchCollection(CONFIG.discogsUsername);
+      cratedigger.loadRecords(records, true);
+    } catch (err) {
+      console.error('Discogs load failed, using default data:', err);
+      cratedigger.loadRecords(data, true);
+    }
+  })();
+} else {
+  // Load default data
+  cratedigger.loadRecords(data, true);
+}
 
 // Remove old static loading
 // cratedigger.loadRecords(data, true, () => {
