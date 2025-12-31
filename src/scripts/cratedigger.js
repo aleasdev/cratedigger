@@ -67,6 +67,10 @@ let targetCameraPos = {
 // Materials
 let woodMaterial;
 
+//background materials
+let skybox; 
+let skyboxGeo;
+
 // Inject all external modules to THREE.js
 // Modules are now imported at the top
 
@@ -562,7 +566,21 @@ function initScene() {
 
   Constants.elements.canvasContainer.appendChild(renderer.domElement);
   renderer.domElement.id = 'context';
-  renderer.setClearColor(Constants.backgroundColor, 1);
+  //renderer.setClearColor(Constants.backgroundColor, 1);
+
+  const skyboxImage = Constants.skyboxName;
+  const materialArray = createSkybox(skyboxImage);
+  skyboxGeo = new THREE.BoxGeometry(10000, 10000, 10000);
+  skybox = new THREE.Mesh(skyboxGeo, materialArray);
+  scene.add(skybox);
+
+  // example of how it would look like the inside of the box
+  // const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0xff00ff, 0x00ffff];
+  // const materialArray = colors.map(color => 
+  //   new THREE.MeshBasicMaterial({ color: color, side: THREE.BackSide })
+  // );
+  // skybox = new THREE.Mesh(new THREE.BoxGeometry(10000, 10000, 10000), materialArray);
+  // scene.add(skybox);
 
   CameraManager.init(canvasWidth / canvasHeight);
   camera = CameraManager.getCamera();
@@ -1065,6 +1083,52 @@ function shuffle(array) {
 
 function isFunction(obj) {
   return typeof obj === 'function' || false;
+}
+
+function createSkybox(filename) {
+  // Helper function to create path strings for all 6 sides
+  function createPathStrings(filename) {
+    const basePath = "../images/skybox/"; // Adjust this to your path
+    const baseFilename = basePath + filename;
+    const fileType = ".jpg"; // or .jpg depending on your images
+    const sides = ["ft", "bk", "up", "dn", "rt", "lf"];
+    
+    const pathStrings = sides.map(side => {
+      return baseFilename + "_" + side + fileType;
+    });
+    console.log("Skybox paths:", pathStrings); // DEBUG
+    return pathStrings;
+  }
+  
+  // Helper function to create material array from images
+  function createMaterialArray(filename) {
+    const skyboxImagePaths = createPathStrings(filename);
+    const materialArray = skyboxImagePaths.map((image, index) => {
+      let texture = new THREE.TextureLoader().load(
+        image,
+        // onLoad callback
+        (tex) => {
+          console.log(`Loaded texture ${index}: ${image}`);
+        },
+        // onProgress callback
+        undefined,
+        // onError callback
+        (err) => {
+          console.error(`Failed to load texture ${index}: ${image}`, err);
+        }
+      );
+      
+      // BackSide is CRITICAL - it renders the inside of the cube
+      return new THREE.MeshBasicMaterial({ 
+        map: texture, 
+        side: THREE.BackSide 
+      });
+    });
+    
+    return materialArray;
+  }
+  
+  return createMaterialArray(filename);
 }
 
 // EXPORTS

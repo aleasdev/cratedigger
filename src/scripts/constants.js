@@ -1,12 +1,12 @@
 const Constants = {
-  debug: false,
+  debug: true,
   canvasWidth: null,
   canvasHeight: null,
   nbCrates: 2,
   recordsPerCrate: 24,
   lightIntensity: 500,
   cameraMouseMove: true,
-  backgroundColor: 0x433E32,
+  backgroundColor: 0xff0000ff,
   sleeveColor: 0x0d0702,
   sleeveMaskTexture: 'images/sleeve.png',
   crateTexture: 'images/wood4.jpg',
@@ -66,6 +66,8 @@ const Constants = {
 
     return this;
   },
+
+  skyboxName: 'heaven',
 };
 
 export default Constants;
