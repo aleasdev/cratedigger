@@ -35,7 +35,7 @@ overlay.innerHTML = `
     <div id="discogs-form">
         <button id="discogs-close">X</button>
         <h2>Load from Discogs</h2>
-        <input type="text" id="discogs-username" placeholder="Enter Username (e.g. djshadow)" value="">
+        <input type="text" id="discogs-username" placeholder="Enter Username (e.g. aleasdev)" value="">
         <br>
         <button class="discogs-btn" id="btn-collection">Load Collection</button>
         <button class="discogs-btn" id="btn-lists">Fetch Lists</button>
@@ -45,10 +45,10 @@ overlay.innerHTML = `
 document.body.appendChild(overlay);
 
 // Trigger Button
-const triggerBtn = document.createElement('button');
-triggerBtn.id = 'discogs-trigger';
-triggerBtn.innerHTML = '<img src="https://st.discogs.com/2eff1e1f4ba14fa6da4395d454da5bf7f4b7fa53/images/discogs-record-icon.svg" alt="Discogs"> Load from Discogs';
-document.body.appendChild(triggerBtn);
+// const triggerBtn = document.createElement('button');
+// triggerBtn.id = 'discogs-trigger';
+// triggerBtn.innerHTML = '<img src="https://st.discogs.com/2eff1e1f4ba14fa6da4395d454da5bf7f4b7fa53/images/discogs-record-icon.svg" alt="Discogs"> Load from Discogs';
+// document.body.appendChild(triggerBtn);
 
 const inputUsername = document.getElementById('discogs-username');
 const btnCollection = document.getElementById('btn-collection');
@@ -120,13 +120,13 @@ async function loadData(records) {
 
 
 // Discogs UI Events
-btnTrigger.addEventListener('click', () => {
-  overlay.classList.remove('hidden');
-});
+// btnTrigger.addEventListener('click', () => {
+//   overlay.classList.remove('hidden');
+// });
 
-btnClose.addEventListener('click', () => {
-  overlay.classList.add('hidden');
-});
+// btnClose.addEventListener('click', () => {
+//   overlay.classList.add('hidden');
+// });
 
 btnCollection.addEventListener('click', async () => {
   const username = inputUsername.value.trim();
