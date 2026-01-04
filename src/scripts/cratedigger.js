@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+
 import TWEEN from '@tweenjs/tween.js';
 import Stats from 'stats.js';
 import * as dat from 'dat.gui';
@@ -11,6 +12,7 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader.js';
 import { DoFShader } from './shaders/DoFShader.js';
+import cameraManager from './cameraManager.js';
 
 // VARIABLES
 const exports = {}; // Object for public APIs
@@ -63,6 +65,8 @@ let targetCameraPos = {
   x: 0,
   y: 0,
 };
+
+let widthOfPage;
 
 // Materials
 let woodMaterial;
@@ -526,17 +530,41 @@ function onKeyDownEvent(e) {
 }
 
 function onWindowResizeEvent() {
+
   calculateCanvasSize();
   setCanvasDimensions();
 
   renderer.setSize(canvasWidth, canvasHeight);
   CameraManager.updateCameraAspect(canvasWidth / canvasHeight);
+  
 
   dof.uniforms.tDepth.value = depthTarget;
   dof.uniforms.size.value.set(canvasWidth, canvasHeight);
   dof.uniforms.textel.value.set(1.0 / canvasWidth, 1.0 / canvasHeight);
   FXAA.uniforms.resolution.value.set(1 / canvasWidth, 1 / canvasHeight);
+
+  changeCameraLensOnWidth();
 }
+// function that changes camera lens depending on the width of the page
+
+function changeCameraLensOnWidth(){
+  widthOfPage = Constants.elements.rootContainer.clientWidth
+  
+  if(widthOfPage < 768){
+      console.log("small");
+      //setlens 
+      cameraManager.setLens(25,30);
+      Constants.cameraMouseMove = false;
+    } else if (widthOfPage < 1024){
+      console.log("tablet");
+      cameraManager.setLens(35,30);
+      Constants.cameraMouseMove = true;
+    } else {
+      console.log("desktop");
+      cameraManager.setLens(40,30)
+      Constants.cameraMouseMove = true;
+    };
+} 
 
 // UI METHODS
 function showLoading(done) {
@@ -600,6 +628,7 @@ function initScene() {
 
   initCrates();
   initRecords();
+  changeCameraLensOnWidth();
 
   // Stronger lights to match original legacy brightness
   light = new THREE.PointLight(0xFFFFFF, 2.5, 0, 0);
