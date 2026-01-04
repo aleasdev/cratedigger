@@ -19,6 +19,7 @@ import { shuffle, wheelDistance , wheelDirection, coordsEqualsApprox, isFunction
 import { createWoodMaterial } from './materials/woodMaterial.js';
 import { getRecordMaterial } from './materials/recordMaterial.js';
 import { createSkybox } from './materials/skybox.js';
+import { CrateManager } from './objects/CrateManager.js';
 
 // VARIABLES
 const exports = {}; // Object for public APIs
@@ -41,7 +42,6 @@ let depthUniforms;
 let depthMaterial;
 
 // Objects & data arrays
-let crates = [];
 let records = [];
 let recordsDataList = [];
 
@@ -586,6 +586,7 @@ function hideLoading(done) {
 // INITIALISATION
 function initScene() {
   var woodTexture;
+  
 
   // scene, renderer, camera,...
   scene = new THREE.Scene();
@@ -624,17 +625,26 @@ function initScene() {
   
   // woodTexture.colorSpace = THREE.NoColorSpace; // Treat as Linear
   // woodTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+
   woodMaterial = createWoodMaterial(renderer,Constants.crateTexture)
 
-  
 
+
+
+  const crateManager = new CrateManager(woodMaterial);
   rootContainer = new THREE.Object3D();
-  cratesContainer = new THREE.Object3D();
+  
+  cratesContainer = crateManager.getContainer()
+
   scene.add(rootContainer);
+  
   rootContainer.add(cratesContainer);
 
-  initCrates();
-  initRecords();
+  crateManager.init();
+
+
+  const crates = crateManager.getCrates();
+  initRecords(crates);
   changeCameraLensOnWidth();
 
   // Stronger lights to match original legacy brightness
@@ -844,70 +854,23 @@ function updateCamera() {
   dof.uniforms.focalLength.value = camera.focalLength;
 }
 
-function initCrates() {
-  var crateId;
-  var crate;
 
-  for (crateId = 0; crateId < Constants.nbCrates; crateId++) {
-    crate = createCrate(crateId);
-    cratesContainer.add(crate);
-  }
-
-  cratesContainer.position.z = -(110 - (110 * Constants.nbCrates)) / 2;
-}
-
-function createCrate(id) {
-  var boxBottom;
-  var boxLeft;
-  var boxRight;
-  var boxBack;
-  var boxFront;
-
-  crates[id] = new THREE.Object3D();
-
-  boxBottom = new THREE.Mesh(new THREE.BoxGeometry(200, 10, 100), woodMaterial);
-  crates[id].add(boxBottom);
-
-  boxLeft = new THREE.Mesh(new THREE.BoxGeometry(200, 10, 80), woodMaterial);
-  boxLeft.position.set(0, 35, -55);
-  boxLeft.rotation.x = Math.PI / 2;
-  crates[id].add(boxLeft);
-
-  if (id === 0) {
-    boxRight = new THREE.Mesh(new THREE.BoxGeometry(200, 10, 80), woodMaterial);
-    boxRight.position.set(0, 35, 55);
-    boxRight.rotation.x = Math.PI / 2;
-    crates[id].add(boxRight);
-  }
-
-  boxBack = new THREE.Mesh(new THREE.BoxGeometry(80, 10, 120), woodMaterial);
-  boxBack.position.set(-105, 35, 0);
-  boxBack.rotation.z = Math.PI / 2;
-  crates[id].add(boxBack);
-
-  boxFront = new THREE.Mesh(new THREE.BoxGeometry(40, 10, 100), woodMaterial);
-  boxFront.position.set(95, 25, 0);
-  boxFront.rotation.z = Math.PI / 2;
-  crates[id].add(boxFront);
-
-  crates[id].position.z = -110 * id;
-  return crates[id];
-}
-
-function initRecords() {
+function initRecords(crates) {
   var currentRecordId = 0;
   var crateId;
   var pos;
 
+  
+
   for (crateId = 0; crateId < crates.length; crateId++) {
     for (pos = 0; pos < Constants.recordsPerCrate; pos++) {
-      createRecord(currentRecordId, crateId, pos);
+      createRecord(currentRecordId, crateId, pos, crates);
       currentRecordId++;
     }
   }
 }
 
-function createRecord(id, crateId, pos) {
+function createRecord(id, crateId, pos,crates) {
   var record = new Record(id, crateId, pos);
   crates[crateId].add(record.mesh);
   records.push(record);
