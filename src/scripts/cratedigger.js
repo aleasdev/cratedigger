@@ -14,6 +14,12 @@ import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader.js';
 import { DoFShader } from './shaders/DoFShader.js';
 import cameraManager from './cameraManager.js';
 
+import { fadeOut, fadeIn, hideElement  } from './utils/dom.js';
+import { shuffle, wheelDistance , wheelDirection, coordsEqualsApprox, isFunction} from './utils/math.js';
+import { createWoodMaterial } from './materials/woodMaterial.js';
+import { getRecordMaterial } from './materials/recordMaterial.js';
+import { createSkybox } from './materials/skybox.js';
+
 // VARIABLES
 const exports = {}; // Object for public APIs
 
@@ -614,12 +620,13 @@ function initScene() {
   camera = CameraManager.getCamera();
 
   // woodTexture = THREE.ImageUtils.loadTexture(Constants.crateTexture);
-  woodTexture = new THREE.TextureLoader().load(Constants.crateTexture);
-  woodTexture.colorSpace = THREE.NoColorSpace; // Treat as Linear
-  woodTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
-  woodMaterial = new THREE.MeshLambertMaterial({
-    map: woodTexture,
-  });
+  // woodTexture = new THREE.TextureLoader().load(Constants.crateTexture);
+  
+  // woodTexture.colorSpace = THREE.NoColorSpace; // Treat as Linear
+  // woodTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  woodMaterial = createWoodMaterial(renderer,Constants.crateTexture)
+
+  
 
   rootContainer = new THREE.Object3D();
   cratesContainer = new THREE.Object3D();
@@ -906,172 +913,12 @@ function createRecord(id, crateId, pos) {
   records.push(record);
 }
 
-function getRecordMaterial(src, hasSleeve) {
-  var img = new Image();
-  var imgWidth = 400;
-  var imgHeight = 400;
-  var mapCanvas = document.createElement('canvas');
-  var texture = new THREE.Texture(mapCanvas);
-  var sleeve;
-  var sleeveMaterial;
-  var materials;
-
-  img.crossOrigin = 'Anonymous';
-  img.src = src ? src : '';
-
-  mapCanvas.width = mapCanvas.height = 400;
-  texture.minFilter = THREE.LinearFilter;
-
-  img.onload = function () {
-    var ctx;
-
-    if (hasSleeve) {
-      sleeve = new Image();
-      sleeve.src = Constants.sleeveMaskTexture;
-
-      sleeve.onload = function () {
-        ctx = mapCanvas.getContext('2d');
-        ctx.translate(imgWidth / 2, imgHeight / 2);
-        ctx.rotate(Math.PI / 2);
-        ctx.translate(-imgWidth / 2, -imgHeight / 2);
-        ctx.drawImage(img, 130, 130, 135, 135);
-        ctx.drawImage(sleeve, 0, 0, 400, 400);
-        texture.needsUpdate = true;
-      };
-    } else {
-      ctx = mapCanvas.getContext('2d');
-      ctx.translate(imgWidth / 2, imgHeight / 2);
-      ctx.rotate(Math.PI / 2);
-      ctx.translate(-imgWidth / 2, -imgHeight / 2);
-      ctx.drawImage(img, 0, 0, 400, 400);
-      texture.needsUpdate = true;
-    }
-  };
-
-  sleeveMaterial = new THREE.MeshLambertMaterial({
-    color: Constants.sleeveColor,
-  });
-
-  materials = [
-    sleeveMaterial,
-    sleeveMaterial,
-    sleeveMaterial,
-
-    // texture
-    new THREE.MeshBasicMaterial({
-      color: 0xffffff,
-      map: texture,
-    }),
-    sleeveMaterial,
-    sleeveMaterial,
-  ];
-
-  return materials;
-}
 
 // UTILS
-function wheelDistance(e) {
-  var event;
-  var wheelDelta;
-  var detail;
 
-  event = e || window.event;
 
-  wheelDelta = event.wheelDelta;
-  detail = event.detail;
 
-  if (detail) {
-    if (wheelDelta) {
-      return wheelDelta / detail / 40 * detail > 0 ? 1 : -1; // Opera
-    }
 
-    return -detail / 3; // Firefox;
-  }
-
-  return wheelDelta / 120; // IE/Safari/Chrome
-}
-
-function wheelDirection(e) {
-  var event;
-
-  event = e || window.event;
-
-  return (event.detail < 0) ? 1 : (event.wheelDelta > 0) ? 1 : -1;
-}
-
-function coordsEqualsApprox(coord1, coord2, range) {
-  return (Math.abs(coord1.x - coord2.x) <= range) && (Math.abs(coord1.y - coord2.y) <= range);
-}
-
-function fadeOut(element) {
-  var transitionEvent;
-
-  if (element.style.opacity === 0) {
-    element.style.display = 'none';
-  } else {
-    transitionEvent = getTransitionEvent(element);
-
-    if (transitionEvent) {
-      element.addEventListener(transitionEvent, onFadeComplete);
-      element.style.opacity = 0;
-    }
-  }
-}
-
-function fadeIn(element) {
-  var transitionEvent;
-
-  if (element.style.opacity === '' || element.style.opacity === '1') {
-    element.style.display = 'block';
-  } else {
-    transitionEvent = getTransitionEvent(element);
-    element.style.display = 'block';
-
-    if (transitionEvent) {
-      element.addEventListener(transitionEvent, onFadeComplete);
-    }
-
-    setTimeout(function () {
-      element.style.opacity = 1;
-    }, 15);
-  }
-}
-
-function onFadeComplete(e) {
-  e.currentTarget.removeEventListener(e.type, onFadeComplete);
-
-  if (e.currentTarget.style.opacity === '0') {
-    e.currentTarget.style.display = 'none';
-  } else {
-    e.currentTarget.style.display = 'block';
-  }
-}
-
-function hideElement(element) {
-  element.style.opacity = 0;
-  element.style.display = 'none';
-}
-
-function showElement(element) {
-  element.style.display = 'block';
-  element.style.opacity = 1;
-}
-
-function getTransitionEvent() {
-  var t;
-  var transitions = {
-    transition: 'transitionend',
-    OTransition: 'oTransitionEnd',
-    MozTransition: 'transitionend',
-    WebkitTransition: 'webkitTransitionEnd',
-  };
-
-  for (t in transitions) {
-    if (document.body.style[t] !== undefined) {
-      return transitions[t];
-    }
-  }
-}
 
 function calculateCanvasSize() {
   canvasWidth = Constants.canvasWidth ? Constants.canvasWidth : Constants.elements.rootContainer.clientWidth;
@@ -1088,77 +935,10 @@ function setCanvasDimensions() {
   Constants.elements.loadingContainer.style.width = canvasWidth + 'px';
 }
 
-function shuffle(array) {
-  var counter = array.length;
-  var temp;
-  var index;
 
-  // While there are elements in the array
-  while (counter > 0) {
-    // Pick a random index
-    index = Math.floor(Math.random() * counter);
 
-    // Decrease counter by 1
-    counter--;
 
-    // And swap the last element with it
-    temp = array[counter];
-    array[counter] = array[index];
-    array[index] = temp;
-  }
 
-  return array;
-}
-
-function isFunction(obj) {
-  return typeof obj === 'function' || false;
-}
-
-function createSkybox(filename) {
-  // Helper function to create path strings for all 6 sides
-  function createPathStrings(filename) {
-    const basePath = "../images/skybox/"; // Adjust this to your path
-    const baseFilename = basePath + filename;
-    const fileType = ".jpg"; // or .jpg depending on your images
-    const sides = ["ft", "bk", "up", "dn", "rt", "lf"];
-    
-    const pathStrings = sides.map(side => {
-      return baseFilename + "_" + side + fileType;
-    });
-    // console.log("Skybox paths:", pathStrings); // DEBUG
-    return pathStrings;
-  }
-  
-  // Helper function to create material array from images
-  function createMaterialArray(filename) {
-    const skyboxImagePaths = createPathStrings(filename);
-    const materialArray = skyboxImagePaths.map((image, index) => {
-      let texture = new THREE.TextureLoader().load(
-        image,
-        // onLoad callback
-        (tex) => {
-          // console.log(`Loaded texture ${index}: ${image}`);
-        },
-        // onProgress callback
-        undefined,
-        // onError callback
-        (err) => {
-          console.error(`Failed to load texture ${index}: ${image}`, err);
-        }
-      );
-      
-      // BackSide is CRITICAL - it renders the inside of the cube
-      return new THREE.MeshBasicMaterial({ 
-        map: texture, 
-        side: THREE.BackSide 
-      });
-    });
-    
-    return materialArray;
-  }
-  
-  return createMaterialArray(filename);
-}
 
 // EXPORTS
 // Public Methods
