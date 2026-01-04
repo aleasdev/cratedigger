@@ -551,16 +551,16 @@ function changeCameraLensOnWidth(){
   widthOfPage = Constants.elements.rootContainer.clientWidth
   
   if(widthOfPage < 768){
-      console.log("small");
+      // console.log("small");
       //setlens 
       cameraManager.setLens(25,30);
       Constants.cameraMouseMove = false;
     } else if (widthOfPage < 1024){
-      console.log("tablet");
+      // console.log("tablet");
       cameraManager.setLens(35,30);
       Constants.cameraMouseMove = true;
     } else {
-      console.log("desktop");
+      // console.log("desktop");
       cameraManager.setLens(40,30)
       Constants.cameraMouseMove = true;
     };
@@ -1125,7 +1125,7 @@ function createSkybox(filename) {
     const pathStrings = sides.map(side => {
       return baseFilename + "_" + side + fileType;
     });
-    console.log("Skybox paths:", pathStrings); // DEBUG
+    // console.log("Skybox paths:", pathStrings); // DEBUG
     return pathStrings;
   }
   
@@ -1137,7 +1137,7 @@ function createSkybox(filename) {
         image,
         // onLoad callback
         (tex) => {
-          console.log(`Loaded texture ${index}: ${image}`);
+          // console.log(`Loaded texture ${index}: ${image}`);
         },
         // onProgress callback
         undefined,
