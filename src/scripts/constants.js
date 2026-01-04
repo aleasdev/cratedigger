@@ -1,5 +1,6 @@
 const Constants = {
   debug: true,
+  skyboxName: 'heaven',
   canvasWidth: null,
   canvasHeight: null,
   nbCrates: 2,
@@ -67,7 +68,6 @@ const Constants = {
     return this;
   },
 
-  skyboxName: 'heaven',
 };
 
 export default Constants;
